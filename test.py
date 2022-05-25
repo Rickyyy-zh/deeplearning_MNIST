@@ -6,7 +6,10 @@ import torchvision.transforms as transforms
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
+<<<<<<< HEAD
 import random
+=======
+>>>>>>> 00891b63f4eb851f01af760e8c48b6c5d3475845
 
 from tqdm import tqdm
 BATCH_SIZE = 8
@@ -59,8 +62,14 @@ class MLP_net(nn.Module):
             if l<depth-1:
                 self.layer.append( self.make_layer(dims[l],dims[l+1]))
         self.middle = nn.Sequential(*self.layer)
+<<<<<<< HEAD
         self.output = nn.Sequential(nn.Linear(dims[-1],10),nn.Softmax(dim=1))
         # self.init_weights()
+=======
+        self.output = nn.Sequential(nn.Linear(dims[-1],10))
+                                # nn.Softmax(dim=1))
+        self.init_weights()
+>>>>>>> 00891b63f4eb851f01af760e8c48b6c5d3475845
 
     def make_layer(self,input_ch, output_ch):
         l = nn.Sequential(nn.Linear(input_ch,output_ch),
@@ -80,7 +89,26 @@ class MLP_net(nn.Module):
         output = self.middle(output)
         output = self.output(output)
         return output
-
+    
+def plot_curve(idx, data1,data2,data3):
+    fig = plt.figure(figsize=(15,5))
+    
+    ax_train_loss = fig.add_subplot(1,3,1)
+    ax_train_loss.set_title("train loss")
+    ax_train_loss.plot(idx,data1)
+    
+    ax_acc = fig.add_subplot(1,3,3)
+    ax_acc.set_title("test accurancy")
+    ax_acc.plot(idx,data3)
+    
+    ax_val_loss = fig.add_subplot(1,3,2)
+    ax_val_loss.set_title("test loss")
+    ax_val_loss.plot(idx,data2)
+    
+    plt.subplots_adjust(wspace=0.5)
+    
+    plt.savefig("./train_process.jpg")
+    plt.close(fig)
 
 def main():
     # load_data()
@@ -94,7 +122,7 @@ def main():
     train_loader = data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
     test_loader = data.DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, drop_last=True)
 
-    device = torch.device("cuda:2") if torch.cuda.is_available() else "cpu"
+    device = torch.device("cuda:7") if torch.cuda.is_available() else "cpu"
     print(device)
     model = MLP_net(3,[512,1024,512],0.1)
     model.to(device)
@@ -118,6 +146,7 @@ def main():
         test_loss = 0
         for batch_idx, (input, target) in enumerate(train_loader):
             input=input.to(device)
+            target = target.to(device)
             optimizer.zero_grad()
             out = model(input)
             loss = loss_fn(out, target)
@@ -131,6 +160,7 @@ def main():
         with torch.no_grad():
             for batch_idx, (test_in, target) in enumerate(test_loader):
                 test_in = test_in.to(device)
+                target = target.to(device)
                 out = model(test_in)
                 result = torch.argmax(out,dim=1)
                 loss = loss_fn(out, target)
