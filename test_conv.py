@@ -26,27 +26,34 @@ def load_data():
 # class conv_net(nn.Module):
 #     def __init__(self):
 
-class MLP_net(nn.Module):
+class Conv_net(nn.Module):
     def __init__(self, depth, dims, dropoutP):
         super().__init__()
         self.layer = []
         self.depth = depth
         self.dropout = dropoutP
-        self.input = nn.Sequential(nn.Linear(28*28,dims[0]),
-                            nn.Tanh(),
+        self.dims = dims
+        self.input = nn.Sequential(nn.Conv2d(1,dims[0],3,stride=1),
+                            nn.ReLU(),
                             # nn.Dropout(self.dropout)
                             )
         for l in range(depth):
             if l<depth-1:
                 self.layer.append( self.make_layer(dims[l],dims[l+1]))
         self.middle = nn.Sequential(*self.layer)
-        self.output = nn.Sequential(nn.Linear(dims[-1],10),nn.Softmax(dim=1))
+        self.output = nn.Sequential(nn.Linear(dims[-1],512),
+                                    nn.ReLU(),
+                                    nn.Dropout(self.dropout),
+                                    nn.Linear(512,10),
+                                    nn.Softmax(dim=1))
         # self.init_weights()
 
     def make_layer(self,input_ch, output_ch):
-        l = nn.Sequential(nn.Linear(input_ch,output_ch),
-                        nn.Tanh(),
-                        nn.Dropout(self.dropout))
+        l = nn.Sequential(nn.Conv2d(input_ch,output_ch,3,stride=1),
+                        nn.ReLU(),
+                        nn.MaxPool2d(2),
+                        nn.BatchNorm2d(output_ch)
+                        )
         return l
 
     def init_weights(self):
@@ -56,9 +63,9 @@ class MLP_net(nn.Module):
                 m.bias.data.zero_()
 
     def forward(self,x):
-        x = x.view(-1,28 * 28)
         output = self.input(x)
         output = self.middle(output)
+        output = output.view(-1,self.dims[-1]*output.shape[-1]*output.shape[-1])
         output = self.output(output)
         return output
     
@@ -96,11 +103,10 @@ def main():
 
     device = torch.device("cuda:7") if torch.cuda.is_available() else "cpu"
     print(device)
-    model = MLP_net(2,[512,512],0.1)
+    model = Conv_net(4,[32,64,128,256],0.1)
     model.to(device)
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr = 0.0001, momentum=0.9, weight_decay=0.0005)
-    # optimizer = torch.optim.Adam(model.parameters(),lr=0.0001)
+    optimizer = torch.optim.SGD(model.parameters(), lr = 0.001, momentum=0.9, weight_decay=0.0005)
     examples = enumerate(test_loader)
     batch_idx, (example_data, example_targets) = next(examples)
     print(example_targets)
